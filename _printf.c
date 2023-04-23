@@ -1,40 +1,53 @@
 #include "main.h"
-#include <stdarg.h> 
-#include <stdio.h>  
 
-int _printf(const char* format, ...) {
-  va_list args;         // declare a va_list to hold the variable arguments
-  va_start(args, format);  // initialize the va_list to the variable arguments
-  
-  int chars_printed = 0;  // keep track of the number of characters printed
-  char ch;               // declare a char to hold each character in the format string
+void print_buffer(char buffer[], int *buff_ind);
 
-  while ((ch = *format++) != '\0') {  // loop through each character in the format string
-    if (ch == '%') {    // if we encounter a '%', process the corresponding conversion specifier
-      switch (*format++) {
-        case 'c':  // print a single character
-          printf("%c", va_arg(args, int));
-          chars_printed++;
-          break;
-        case 's':  // print a string of characters
-          chars_printed += printf("%s", va_arg(args, char*));
-          break;
-        case '%':  // print a percent sign
-          printf("%%");
-          chars_printed++;
-          break;
-        default:   // if the conversion specifier is not recognized, print it literally
-          printf("%%%c", ch);
-          chars_printed += 2;
-          break;
-      }
-    } else {  // if the current character is not a '%', print it literally
-      printf("%c", ch);
-      chars_printed++;
-    }
-  }
+/**
+ * _printf - Printf function
+ * @format: format.
+ * Return: Printed chars.
+ */
+int _printf(const char *format, ...)
+{
+	int i, printed = 0, printed_chars = 0;
+	int flags, width, precision, size, buff_ind = 0;
+	va_list list;
+	char buffer[BUFF_SIZE];
 
-  va_end(args);  // clean up the va_list
+	if (format == NULL)
+		return (-1);
 
-  return chars_printed;
+	va_start(list, format);
+
+	for (i = 0; format && format[i] != '\0'; i++)
+	{
+		if (format[i] != '%')
+		{
+			buffer[buff_ind++] = format[i];
+			if (buff_ind == BUFF_SIZE)
+				print_buffer(buffer, &buff_ind);
+			/* write(1, &format[i], 1);*/
+			printed_chars++;
+		}
+		else
+		{
+			print_buffer(buffer, &buff_ind);
+			flags = get_flags(format, &i);
+			width = get_width(format, &i, list);
+			precision = get_precision(format, &i, list);
+			size = get_size(format, &i);
+			++i;
+			printed = handle_print(format, &i, list, buffer,
+				flags, width, precision, size);
+			if (printed == -1)
+				return (-1);
+			printed_chars += printed;
+		}
+	}
+
+	print_buffer(buffer, &buff_ind);
+
+	va_end(list);
+
+	return (printed_chars);
 }
